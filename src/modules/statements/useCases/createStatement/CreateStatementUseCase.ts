@@ -8,25 +8,43 @@ import { ICreateStatementDTO } from "./ICreateStatementDTO";
 @injectable()
 export class CreateStatementUseCase {
   constructor(
-    @inject('UsersRepository')
+    @inject("UsersRepository")
     private usersRepository: IUsersRepository,
 
-    @inject('StatementsRepository')
+    @inject("StatementsRepository")
     private statementsRepository: IStatementsRepository
   ) {}
 
-  async execute({ user_id, type, amount, description }: ICreateStatementDTO) {
+  async execute({
+    user_id,
+    sender_id,
+    type,
+    amount,
+    description,
+  }: ICreateStatementDTO) {
     const user = await this.usersRepository.findById(user_id);
 
-    if(!user) {
+    if (!user) {
       throw new CreateStatementError.UserNotFound();
     }
 
-    if(type === 'withdraw') {
-      const { balance } = await this.statementsRepository.getUserBalance({ user_id });
+    if (type === "withdraw") {
+      const { balance } = await this.statementsRepository.getUserBalance({
+        user_id,
+      });
 
       if (balance < amount) {
-        throw new CreateStatementError.InsufficientFunds()
+        throw new CreateStatementError.InsufficientFunds();
+      }
+    }
+
+    if (type === "transfer") {
+      const { balance } = await this.statementsRepository.getUserBalance({
+        user_id,
+      });
+
+      if (balance < amount) {
+        throw new CreateStatementError.InsufficientFunds();
       }
     }
 
@@ -34,7 +52,8 @@ export class CreateStatementUseCase {
       user_id,
       type,
       amount,
-      description
+      sender_id,
+      description,
     });
 
     return statementOperation;
